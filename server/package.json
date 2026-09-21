@@ -1,0 +1,17 @@
+{
+  "name": "arenalite-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Arealite agent server: unlimited workspaces, sessions, tools, provider gateway, sync",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "ws": "^8.18.0"
+  }
+}
