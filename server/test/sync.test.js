@@ -20,7 +20,10 @@ async function setup() {
 test('session store: sqlite driver loads and persists messages', async () => {
   const dataRoot = tmpDir('arealite-store-');
   const store = await SessionStore.open({ file: path.join(dataRoot, 'db.sqlite3') });
-  assert.equal(store.driver, 'sqlite', `sqlite gagal dimuat: ${store.loadError || 'n/a'}`);
+  assert.ok(
+    store.driver === 'sqlite' || store.driver === 'node:sqlite',
+    `sqlite gagal dimuat (driver=${store.driver}): ${store.loadError || 'n/a'}`,
+  );
 
   store.upsertSession({ id: 's1', title: 'Uji', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
   store.appendMessage('s1', { role: 'user', content: 'halo' });

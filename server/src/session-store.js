@@ -49,9 +49,15 @@ export class SessionStore {
     this.memory = { sessions: new Map(), messages: [], sync: new Map() };
   }
 
-  /** async factory: picks sqlite when the native module loads, else jsonl. */
+  /**
+   * async factory. Preference order:
+   *   1. better-sqlite3  — fastest, but a native module (needs node-gyp)
+   *   2. node:sqlite     — built into Node 22+, no compilation
+   *   3. jsonl           — last resort, still unbounded history
+   */
   static async open({ file }) {
     fs.mkdirSync(path.dirname(file), { recursive: true });
+
     try {
       const mod = await import('better-sqlite3');
       const Database = mod.default || mod;
@@ -60,10 +66,20 @@ export class SessionStore {
       db.exec(SCHEMA);
       return new SessionStore({ file, driver: 'sqlite', db });
     } catch (err) {
-      const store = new SessionStore({ file: file.replace(/\.sqlite3?$/, '.jsonl'), driver: 'jsonl' });
-      store.loadJsonl();
-      store.loadError = err.message;
-      return store;
+      try {
+        const { loadNodeSqlite } = await import('./node-sqlite-adapter.js');
+        const open = await loadNodeSqlite();
+        const db = open(file);
+        db.exec(SCHEMA);
+        const store = new SessionStore({ file, driver: 'node:sqlite', db });
+        store.loadError = `better-sqlite3 tidak tersedia (${err.code || err.message}); memakai node:sqlite`;
+        return store;
+      } catch (inner) {
+        const store = new SessionStore({ file: file.replace(/\.sqlite3?$/, '.jsonl'), driver: 'jsonl' });
+        store.loadJsonl();
+        store.loadError = `sqlite tidak tersedia (${inner.message}); memakai jsonl`;
+        return store;
+      }
     }
   }
 
